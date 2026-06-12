@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import qrcode
+import io
+import base64
 
 st.set_page_config(page_title="Iesire Sorter Manager", layout="wide")
 
@@ -16,7 +19,7 @@ div[data-testid="metric-container"]{background:#f8f8f8;border:1px solid #e8e8e8;
 .leg-galben{background:#f9e79f;color:#7a6000;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{background:#f5f5f5;padding:10px 14px;text-align:left;border-bottom:2px solid #e0e0e0;color:#444;font-weight:600;}
-td{padding:9px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+td{padding:9px 14px;border-bottom:1px solid #f0f0f0;vertical-align:middle;text-align:center;}
 .ag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:500;}
 .ag-verde{background:#eafaea;color:#1a5c1a;}
 .ag-rosu{background:#fdecea;color:#c62828;}
@@ -46,7 +49,20 @@ def get_zone(agency):
         return 'rosu'
     return 'galben'
 
-def build_table(data):
+def generate_qr(text):
+    try:
+        qr = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr.add_data(str(text))
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        b64 = base64.b64encode(buffer.getvalue()).decode()
+        return '<img src="data:image/png;base64,' + b64 + '" width="70" height="70"/>'
+    except:
+        return ''
+
+def build_table(data, show_qr):
     rows = []
     for _, row in data.iterrows():
         nr = str(row.get('Nr colet', ''))
@@ -58,6 +74,8 @@ def build_table(data):
         zr = get_zone(rid)
         zl = get_zone(liv)
         tr = '<tr class="row-' + zl + '">'
+        if show_qr:
+            tr += '<td>' + generate_qr(nr) + '</td>'
         tr += '<td class="colet">' + nr + '</td>'
         tr += '<td class="date">' + dr + '</td>'
         tr += '<td class="date">' + dus + '</td>'
@@ -66,7 +84,10 @@ def build_table(data):
         tr += '<td><span class="ag ag-' + zl + '">' + liv + '</span></td>'
         tr += '</tr>'
         rows.append(tr)
-    header = '<table><thead><tr><th>Nr. Colet</th><th>Data Receptie</th><th>Data Ultim Status</th><th>Status</th><th>Agentie Ridicare</th><th>Agentie Livrare</th></tr></thead><tbody>'
+    if show_qr:
+        header = '<table><thead><tr><th>QR Code</th><th>Nr. Colet</th><th>Data Receptie</th><th>Data Ultim Status</th><th>Status</th><th>Agentie Ridicare</th><th>Agentie Livrare</th></tr></thead><tbody>'
+    else:
+        header = '<table><thead><tr><th>Nr. Colet</th><th>Data Receptie</th><th>Data Ultim Status</th><th>Status</th><th>Agentie Ridicare</th><th>Agentie Livrare</th></tr></thead><tbody>'
     return header + ''.join(rows) + '</tbody></table>'
 
 st.title("Iesire Sorter Manager")
@@ -108,6 +129,8 @@ if uploaded:
     with col_s2:
         sort_dir = st.radio("Directie:", ["A-Z", "Z-A"], horizontal=True)
 
+    show_qr = st.checkbox("Afiseaza coloana QR Code", value=True)
+
     view = df.copy()
     if search.strip():
         mask = view.apply(lambda r: r.astype(str).str.contains(search, case=False, na=False).any(), axis=1)
@@ -117,7 +140,7 @@ if uploaded:
 
     rpp_col, _, cnt_col = st.columns([1, 3, 1])
     with rpp_col:
-        rpp = st.selectbox("Randuri per pagina:", [25, 50, 100, 200], index=1)
+        rpp = st.selectbox("Randuri per pagina:", [10, 25, 50], index=0)
     with cnt_col:
         st.markdown("<div style='padding-top:28px;font-size:13px;color:#555;'><b>" + str(len(view)) + "</b> randuri</div>", unsafe_allow_html=True)
 
@@ -126,7 +149,7 @@ if uploaded:
     start = (page - 1) * rpp
     page_data = view.iloc[start:start + rpp]
 
-    st.markdown(build_table(page_data), unsafe_allow_html=True)
+    st.markdown(build_table(page_data, show_qr), unsafe_allow_html=True)
 
     st.markdown("---")
     st.download_button("Descarca datele filtrate (CSV)", data=view.to_csv(index=False).encode('utf-8'), file_name="iesire_sorter_export.csv", mime="text/csv")
