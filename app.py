@@ -173,8 +173,8 @@ if uploaded:
     styled = (
         page_data.style
         .apply(highlight_row, axis=1)
-        .applymap(lambda v: color_agency(v, 'Agentie ridicare'), subset=['Agentie ridicare'])
-        .applymap(lambda v: color_agency(v, 'Agentie livrare'),  subset=['Agentie livrare'])
+       .map(color_agency, subset=['Agentie ridicare'])
+      .map(color_agency, subset=['Agentie livrare'])
         .set_properties(**{'font-size': '13px'})
     )
 
