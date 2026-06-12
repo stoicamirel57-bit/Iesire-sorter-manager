@@ -121,22 +121,22 @@ if uploaded:
     st.markdown('<div class="legend-box"><div class="leg leg-verde">Verde - Sud</div><div class="leg leg-rosu">Rosu - Nord / Vest / International</div><div class="leg leg-mov">Mov - Bucuresti / Hub-uri</div><div class="leg leg-galben">Galben - Alte zone</div></div>', unsafe_allow_html=True)
     st.markdown("---")
 
-    col_f, col_s1, col_s2 = st.columns([3, 1, 1])
-    with col_f:
-        search = st.text_input("Cauta dupa colet, agentie, status...", "")
+    show_qr = st.checkbox("Afiseaza coloana QR Code", value=True)
+
+    search = st.text_input("Cauta dupa colet, agentie, status...", "")
+
+    col_s1, col_s2 = st.columns([2, 2])
     with col_s1:
         sort_col = st.selectbox("Sorteaza dupa:", ["Agentie livrare", "Agentie ridicare", "Nr colet", "Status", "Data receptie", "Data ultim status"])
     with col_s2:
-        sort_dir = st.radio("Directie:", ["A-Z", "Z-A"], horizontal=True)
-
-    show_qr = st.checkbox("Afiseaza coloana QR Code", value=True)
+        sort_dir = st.selectbox("Directia sortarii:", ["De la A la Z", "De la Z la A"])
 
     view = df.copy()
     if search.strip():
         mask = view.apply(lambda r: r.astype(str).str.contains(search, case=False, na=False).any(), axis=1)
         view = view[mask]
 
-    view = view.sort_values(by=sort_col, ascending=(sort_dir == "A-Z"), na_position='last')
+    view = view.sort_values(by=sort_col, ascending=(sort_dir == "De la A la Z"), na_position='last')
 
     rpp_col, _, cnt_col = st.columns([1, 3, 1])
     with rpp_col:
