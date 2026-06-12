@@ -149,4 +149,5 @@ if uploaded:
     start = (page - 1) * rpp
     page_data = view.iloc[start:start + rpp]
 
-    st.caption(f"Pagina {page} din {total_pages}
+ info = "Pagina " + str(page) + " din " + str(total_pages)
+st.caption(info)
